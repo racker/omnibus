@@ -22,7 +22,6 @@
         [omnibus.steps]
         [omnibus.log]
         [omnibus.util]
-        [omnibus.s3]
         [clojure.java.shell :only [sh]]
         [clojure.contrib.logging :only [log]]        
         [clojure.contrib.json]
@@ -40,9 +39,6 @@
 (def *omnibus-makeself-dir* (file-str *omnibus-home-dir* "/makeself"))
 (def *omnibus-bin-dir* (file-str *omnibus-home-dir* "/bin"))
 
-(def *bucket-name* (atom ""))
-(def *s3-access-key* (atom ""))
-(def *s3-secret-key* (atom ""))
 
 (defstruct software-desc
   :name
@@ -103,7 +99,6 @@
         status (sh "fpm" "-s" "dir" "-t" "deb" "-v" version "--iteration" iteration "-n" project-name "/opt/opscode" "-m" "Opscode, Inc." "--post-install" (str *omnibus-source-dir* "/postinst") "--post-uninstall" (str *omnibus-source-dir* "/postrm") "--description" "The full stack install of Opscode Chef" "--url" "http://www.opscode.com" :dir "./pkg") ]
     (log-sh-result status
                    (do
-                     (put-in-bucket asset-path @*bucket-name* (str (os-data :platform) "-" (os-data :platform_version) "-" (os-data :machine) "/" asset-name) @*s3-access-key* @*s3-secret-key*) 
                      (str "Created debian package"))
                    (str "Failed to create debian package"))))
 
@@ -116,7 +111,6 @@
         status (sh "fpm" "-s" "dir" "-t" "rpm" "-v" version "--iteration" iteration "-n" project-name "/opt/opscode" "-m" "Opscode, Inc." "--post-install" (str *omnibus-source-dir* "/postinst") "--post-uninstall" (str *omnibus-source-dir* "/postrm") "--description" "The full stack install of Opscode Chef" "--url" "http://www.opscode.com" :dir "./pkg")]
     (log-sh-result status
                    (do
-                     (put-in-bucket asset-path @*bucket-name* (str (os-data :platform) "-" (os-data :platform_version) "-" (os-data :machine) "/" asset-name) @*s3-access-key* @*s3-secret-key*) 
                      (str "Created rpm package"))
                    (str "Failed to create rpm package"))))
 
@@ -129,7 +123,6 @@
         status (sh "tar" "czf" asset-path "opscode" :dir "/opt")]
     (log-sh-result status
                    (do
-                     (put-in-bucket asset-path @*bucket-name* (str (os-data :platform) "-" (os-data :platform_version) "-" (os-data :machine) "/" asset-name) @*s3-access-key* @*s3-secret-key*) 
                      (str "Created tarball package for " project-name " on " (os-data :platform) " " (os-data :platform_version) " " (os-data :machine)))
                    (str "Failed to create tarball package for " project-name " on " (os-data :os) " " (os-data :machine)))))
 
@@ -147,7 +140,6 @@
                    :dir *omnibus-home-dir*)]
     (log-sh-result status
                    (do
-                     (put-in-bucket asset-path @*bucket-name* (str (os-data :platform) "-" (os-data :platform_version) "-" (os-data :machine) "/" asset-name) @*s3-access-key* @*s3-secret-key*) 
                      (str "Created shell archive for " project-name " on " (os-data :platform) " " (os-data :platform_version) " " (os-data :machine)))
                    (str "Failed to create shell archive for " project-name " on " (os-data :platform) " " (os-data :platform_version) " " (os-data :machine)))))
 
@@ -186,13 +178,6 @@
   [& args]
   (with-command-line args
     "Specify the project you'd like me to build..."
-    [[project-name "The name of the project to build"]
-     [bucket-name "The S3 Bucket Name"]
-     [s3-access-key "The S3 Access Key"]
-     [s3-secret-key "The S3 Secret Key"]]
-    (reset! *bucket-name* bucket-name)
-    (reset! *s3-access-key* s3-access-key)
-    (reset! *s3-secret-key* s3-secret-key)
-
+    [[project-name "The name of the project to build"]]
     (build-fat-binary project-name)))
 
