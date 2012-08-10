@@ -95,8 +95,7 @@
   [project-name version iteration os-data]
   (let [
         asset-name (str project-name "_" version "-" iteration "_" (if (= (os-data :machine) "x86_64") "amd64" "i386") ".deb")
-        asset-path (.toString (file-str *omnibus-pkg-dir* "/" asset-name))
-        status (sh "fpm" "-s" "dir" "-t" "deb" "-v" version "--iteration" iteration "-n" project-name "/opt/opscode" "-m" "Opscode, Inc." "--post-install" (str *omnibus-source-dir* "/postinst") "--post-uninstall" (str *omnibus-source-dir* "/postrm") "--description" "The full stack install of Opscode Chef" "--url" "http://www.opscode.com" :dir "./pkg") ]
+        status (sh "/bin/bash" "-c" (str "cd pkg && fpm" " -s" " dir" " -t" " deb" " -v " version " --iteration " iteration " -n " project-name " -m " "Rackspace" " --prefix " (str "/opt/" project-name)  " ../build/*")) ]
     (log-sh-result status
                    (do
                      (str "Created debian package"))
